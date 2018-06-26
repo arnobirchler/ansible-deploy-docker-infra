@@ -1,0 +1,12 @@
+---
+# tasks file for elastic-suite
+- name: LEADER | STACK | COPY COMPOSE ELASTIC
+  template:
+    src: "docker-compose-stack-elastic.j2"
+    dest: "/root/docker-compose-stack-elastic.yml"
+    owner: root
+    mode : "0755"
+  when: '"leader" in group_names'
+- name: LEADER | STACK | DEPLOY ELASTIC
+  command: "docker stack deploy --compose-file /root/docker-compose-stack-elastic.yml elastic"
+  when: '"leader" in group_names'

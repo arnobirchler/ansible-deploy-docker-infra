@@ -1,0 +1,38 @@
+version: "3"
+services:
+### PORTAINER AGENT
+  agent:
+    image: portainer/agent
+    environment:
+      AGENT_CLUSTER_ADDR: tasks.agent
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - agent_network
+    deploy:
+      mode: global
+      
+### PORTAINER WEB
+  portainer:
+    image: portainer/portainer
+    command: -H tcp://tasks.agent:9001 --tlsskipverify
+    environment:
+      - "VIRTUAL_HOST={{manager_domain}}"
+    volumes:
+      - portainer_data:/data
+    networks:
+      - agent_network
+      - proxy_nginx
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+networks:
+  proxy_nginx:
+    external: true
+  swarmnet:
+  agent_network:
+    driver: overlay
+volumes:
+  portainer_data:

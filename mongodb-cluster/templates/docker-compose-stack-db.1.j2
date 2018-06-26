@@ -1,0 +1,99 @@
+version: '3'
+
+services:
+
+  replica1:
+    image: khezen/mongo:latest
+    deploy:
+      mode: replicated
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - node.role == manager
+    environment:
+      RS_NAME: shard1
+      SHARD_SVR: 'y'
+      AUTH: 'y'
+      ADMIN_USER: root
+      ADMIN_PWD: root
+    volumes:
+      - /data/mongo/replica1:/data/db
+    networks:
+      - mongo_cluster
+
+  replica2:
+    image: khezen/mongo:latest
+    deploy:
+      mode: replicated
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - node.role == manager
+    environment:
+      RS_NAME: shard1
+      SHARD_SVR: 'y'
+      AUTH: 'y'
+      ADMIN_USER: root
+      ADMIN_PWD: root
+    volumes:
+      - /data/mongo/replica2:/data/db
+    networks:
+      - mongo_cluster
+
+  replica3:
+    image: khezen/mongo:latest
+    deploy:
+      mode: replicated
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - node.role == manager
+    environment:
+      RS_NAME: shard1
+      SHARD_SVR: 'y'
+      MASTER: replica3
+      SLAVES: replica1 replica2
+      AUTH: 'y'
+    volumes:
+      - /data/mongo/replica3:/data/db
+    networks:
+      - mongo_cluster
+
+  mongo-express:
+    image: mongo-express
+    networks:
+      - mongo_cluster
+      - proxy_nginx
+    ports:
+      - 8081:8081
+    environment:
+      - "VIRTUAL_HOST={{mongo_domain}}"
+      - "ME_CONFIG_MONGODB_ADMINUSERNAME=root"
+      - "ME_CONFIG_MONGODB_ADMINPASSWORD=root"
+    deploy:
+      restart_policy:
+        condition: on-failure
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+networks:
+  proxy_nginx:
+    external: true
+  mongo_cluster:
+    driver: overlay

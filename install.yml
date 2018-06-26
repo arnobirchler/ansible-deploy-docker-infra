@@ -1,0 +1,140 @@
+- name: Infra deployment
+  hosts: all
+  remote_user: root
+  
+  tasks:
+  - include_vars:
+      file: vars.yml
+  # - name: ALL | Install User & SSH
+  #   include_role:
+  #     name: arnobirchler.ssh-access
+  # - name: ALL | Install Tools
+  #   include_role:
+  #     name: arnobirchler.tools
+  # - name: ALL | Install Docker
+  #   include_role:
+  #     name: arnobirchler.docker
+  # - name: ALL | Install local persistent plugin
+  #   shell: curl -fsSL https://raw.githubusercontent.com/CWSpear/local-persist/master/scripts/install.sh |  bash
+
+###--- Configure hostname ---###
+- name: LEADER | Hostname
+  hosts: leader
+  tasks:
+  - name: LEADER | Hostname
+    shell: hostname leader
+- name: MANAGER1 | Hostname
+  hosts: manager1
+  tasks:
+  - name: MANAGER1 | Hostname
+    shell: hostname manager1
+- name: MANAGER2 | Hostname
+  hosts: manager2
+  tasks:
+  - name: MANAGER2 | Hostname
+    shell: hostname manager2
+- name: WORKER1 | Hostname
+  hosts: worker1
+  tasks:
+  - name: LEADER | Hostname
+    shell: hostname worker1
+    
+######----- CONFIGURE MANAGER & WORKER ------######
+- name: LEADER | Deployment
+  hosts: leader
+  tasks:
+    ### Remove unused network
+  - name: LEADER | SWARM | remove unused network
+    command: "docker network prune"
+  - name: LEADER | SWARM | Leave upload script
+    template:
+      src : "docker-swarm-leaver.j2"
+      dest: "/root/docker-swarm-leaver.sh"
+      owner: root
+      mode: '0755'
+  - name: LEADER | SWARM | start leave script
+    command: "bash /root/docker-swarm-leaver.sh"
+  - name: LEADER | SWARM | Configure swarm
+    command: "docker swarm init --listen-addr {{ ansible_default_ipv4.address }} --advertise-addr {{ ansible_default_ipv4.address }}"
+  ### Get worker & manager token
+  - name: LEADER | SWARM | get worker token
+    command: "docker swarm join-token -q worker"
+    register: swarmTokenWorker
+  - name: LEADER | SWARM | get manager token
+    command: "docker swarm join-token -q manager"
+    register: swarmTokenManager
+
+#---- DEPLOY PROXY ----#
+  - name: LEADER | STACK | PROXY
+    template:
+      src: "docker-compose-stack-proxy.j2"
+      dest: "/root/docker-compose-stack-proxy.yml"
+      owner: root
+      mode: "0555"
+  - name: LEADER | SWARM | DEPLOY PROXY
+    command: "docker stack deploy --compose-file /root/docker-compose-stack-proxy.yml proxy"
+#---- DEPLOY MANAGER ----#
+  - name: LEADER | STACK | COPY MANAGER
+    template:
+      src: "docker-compose-stack-manager.j2"
+      dest: "/root/docker-compose-stack-manager.yml"
+      owner: root
+      mode : "0555"
+  - name: LEADER | STACK | DEPLOY MANAGER
+    command: "docker stack deploy --compose-file /root/docker-compose-stack-manager.yml manager"
+
+  
+  ######----- CONFIGURE MANAGER & WORKER ------######
+- name: MANAGER | Deployment
+  hosts: manager
+  tasks:
+  - name: MANAGER | JOIN | Copy Script
+    template:
+      src : "docker-swarm-joiner.j2"
+      dest: "/root/docker-swarm-joiner.sh"
+      owner: root
+      mode: '0755'
+    with_items:
+      - token: "{{hostvars[leader_ip]['swarmTokenManager']['stdout']}}"
+  - name: MANAGER | JOIN | Run docker-swarm-joiner
+    command: "bash /root/docker-swarm-joiner.sh"
+- name: WORKER | Deployment
+  hosts: worker
+  tasks:
+  - name: WORKER | JOIN | Copy Script
+    template:
+      src : "docker-swarm-joiner.j2"
+      dest: "/root/docker-swarm-joiner.sh"
+      owner: root
+      mode: '0755'
+    with_items:
+      - token: "{{hostvars[leader_ip]['swarmTokenWorker']['stdout']}}"
+  - name: WORKER | JOIN | Run docker-swarm-joiner
+    command: "bash /root/docker-swarm-joiner.sh"
+
+
+#---- DEPLOY DB ----#
+- name: Database
+  hosts: all
+  remote_user: root
+  tasks:
+  - include_vars:
+      file: vars.yml
+    #---- DEPLOY MONGODB ----#
+  - name: DB | MONGODB CLUSTER
+    include_role:
+      name: mongodb-cluster
+    #---- DEPLOY ELASTIC SUITE ----#
+  - name: DB | ELASTIC SUITE
+    include_role:
+      name: elastic-suite
+    #----- DEPLOY MONGO CONNECTOR ----#
+  - name: DB | MONGO CONNECTOR
+    include_role:
+      name: mongo-connector
+
+
+
+
+
+#####----- Configure IP Failover -----#####

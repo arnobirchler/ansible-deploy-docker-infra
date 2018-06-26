@@ -1,0 +1,51 @@
+---
+# tasks file for mongodb-cluster
+
+- name: DEBUG
+  debug:
+    msg: "{{ group_names }}"
+- name: TEST
+  command: ls
+  when: '"manager" in group_names'
+
+- name: ALL | VOLUMES | MKDIR
+  command: mkdir -p /data/db/admin /data/db/keyfile
+### MONGO KEYFILE
+- name: ALL | STACK | COPY keyfile
+  template:
+    src: "mongo-keyfile.j2"
+    dest: "/data/db/keyfile/mongo-keyfile"
+    owner: root
+    mode : "0700"
+### MONGO seed
+- name: ALL | STACK | COPY admin.js
+  template:
+    src: "admin.j2"
+    dest: "/data/db/admin/admin.js"
+    owner: root
+    mode : "0555"
+- name: ALL | STACK | COPY replica.js
+  template:
+    src: "replica.j2"
+    dest: "/data/db/admin/replica.js"
+    owner: root
+    mode : "0555"
+### Deploy db
+- name: LEADER | STACK | COPY db
+  template:
+    src: "docker-compose-stack-db.j2"
+    dest: "/root/docker-compose-stack-db.yml"
+    owner: root
+    mode : "0555"
+  vars:
+    port: 27017
+    service_name: master1
+  when: '"leader" in group_names'
+- name: LEADER | STACK | DEPLOY DB
+  command: "docker stack deploy --compose-file /root/docker-compose-stack-db.yml db"
+- name: ALL | VOLUME | PERMISSION
+  shell: if [ $(docker ps -qf "name=mongo") != "" ]; then docker exec $(docker ps -qf "name=mongo") chown -R mongodb:mongodb /data/db/* && chmod 600 -R /data/db/*; fi;
+- name: ALL | MONGO | SET REPLICA
+  shell: if [ $(docker ps -qf "name=mongo") != "" ]; then docker exec $(docker ps -qf "name=mongo") bash -c 'mongo < /data/db/admin/replica.js'; fi;
+- name: ALL | MONGO | SET ADMIN USER
+  shell: if [ $(docker ps -qf "name=mongo") != "" ]; then docker exec $(docker ps -qf "name=mongo") bash -c 'mongo < /data/db/admin/admin.js'; fi;

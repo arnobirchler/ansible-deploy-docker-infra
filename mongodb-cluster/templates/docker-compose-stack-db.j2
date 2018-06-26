@@ -1,0 +1,116 @@
+version: '3'
+
+services:
+###--- MONGO MASTER ---###
+  mongo1:
+    image: mongo
+    deploy:
+      mode: replicated
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+            - node.labels.mongo.replica == 1
+    command: --replSet 'rs1'
+    environment:
+      - MONGO_USER_ADMIN=cristian
+      - MONGO_PASS_ADMIN=cristianPassword2017
+      - MONGO_REPLICA_ADMIN=replicaAdmin
+      - MONGO_PASS_REPLICA=replicaAdminPassword2017
+    volumes:
+      - mongodata1:/data/db
+      - mongoconfig1:/data/configdb
+    networks:
+      - mongo
+
+  mongo2:
+    image: mongo
+    deploy:
+      mode: replicated
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+            - node.labels.mongo.replica == 2
+    command: --replSet 'rs1'
+    environment:
+      - MONGO_USER_ADMIN=cristian
+      - MONGO_PASS_ADMIN=cristianPassword2017
+      - MONGO_REPLICA_ADMIN=replicaAdmin
+      - MONGO_PASS_REPLICA=replicaAdminPassword2017
+    volumes:
+      - mongodata2:/data/db
+      - mongoconfig2:/data/configdb
+    networks:
+      - mongo
+
+  mongo3:
+    image: mongo
+    deploy:
+      mode: replicated
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+            - node.labels.mongo.replica == 3
+    command: --replSet 'rs1'
+    environment:
+      - MONGO_USER_ADMIN=cristian
+      - MONGO_PASS_ADMIN=cristianPassword2017
+      - MONGO_REPLICA_ADMIN=replicaAdmin
+      - MONGO_PASS_REPLICA=replicaAdminPassword2017
+    volumes:
+      - mongodata3:/data/db
+      - mongoconfig3:/data/configdb
+    networks:
+      - mongo
+
+  # mongo-express:
+  #   image: mongo-express
+  #   networks:
+  #     - mongo_cluster
+  #     - proxy_nginx
+  #   ports:
+  #     - 8081:8081
+  #   environment:
+  #     - "VIRTUAL_HOST={{mongo_domain}}"
+  #     - "ME_CONFIG_MONGODB_ADMINUSERNAME=root"
+  #     - "ME_CONFIG_MONGODB_ADMINPASSWORD=root"
+  #   deploy:
+  #     restart_policy:
+  #       condition: on-failure
+  #     mode: replicated
+  #     replicas: 1
+  #     placement:
+  #       constraints: [node.role == manager]
+# volumes:
+#   data-mongo:
+#     driver: local
+#     driver_opts:
+#       type: none
+#       device: /data/db
+#       o: bind
+volumes:
+  mongodata1:
+  mongoconfig1:
+  mongodata2:
+  mongoconfig2:
+  mongodata3:
+  mongoconfig3:
+networks:
+  proxy_nginx:
+    external: true
+  mongo:
+    external: true

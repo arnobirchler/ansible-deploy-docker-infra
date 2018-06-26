@@ -1,0 +1,11 @@
+#/bin/bash
+
+NC='\033[0m'
+GREEN='\033[0;32m'
+
+swarm_inactive=$( docker info | grep Swarm | sed 's/Swarm: //g' | grep inactive)
+
+if [ "$swarm_inactive" != "inactive" ]
+then
+        docker swarm leave --force
+fi

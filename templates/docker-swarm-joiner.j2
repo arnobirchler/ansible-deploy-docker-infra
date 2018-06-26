@@ -1,0 +1,29 @@
+#bin/bash
+NC='\033[0m'
+GREEN='\033[0;32m'
+
+joinSwarm ()
+
+{
+        docker swarm join --token {{item.token}} {{leader_ip}}:2377
+        echo -e "${GREEN}Swarm joined${NC}";
+}
+
+swarm_inactive=$( docker info | grep Swarm | sed 's/Swarm: //g' | grep inactive)
+
+if [ "$swarm_inactive" = "inactive" ]
+then
+        joinSwarm
+else #Swarm is active
+        docker swarm leave --force
+        joinSwarm
+        # manager=$( docker info | awk '/Manager Addresses/{getline; print}' | grep {{leader_ip}}:2377)
+        # #Check if wrong manager
+        # if [ "$manager" = "" ]
+        # then
+        #         docker swarm leave
+        #         joinSwarm
+        # else
+        #         echo -e "${GREEN}No action needed${NC} already on the good swarm"
+        # fi
+fi

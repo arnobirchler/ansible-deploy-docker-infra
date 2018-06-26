@@ -1,0 +1,12 @@
+---
+# tasks file for mongo-connector
+# - name: LEADER | STACK | COPY COMPOSE MONGO CONNECT
+#   template:
+#     src: "docker-compose-stack-mongo-connect.j2"
+#     dest: "/root/docker-compose-stack-mongo-connect.yml"
+#     owner: root
+#     mode : "0755"
+#   when: '"leader" in group_names'
+# - name: LEADER | STACK | DEPLOY MONGO CONNECT
+#   command: "docker stack deploy --compose-file /root/docker-compose-stack-mongo-connect.yml mongo-connect"
+#   when: '"leader" in group_names'

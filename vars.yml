@@ -1,0 +1,14 @@
+user: app
+sudoer: deployer
+stack_name: demo
+leader_ip: 192.168.84.136
+ips_list: 192.168.84.136,192.168.84.133,192.168.84.135,192.168.84.134
+#vhost
+domain: arno-birchler.com
+manager_domain: manager.{{domain}}
+mongo_domain: mongo.{{domain}}
+
+#mongo
+node1: 192.168.84.136
+node2: 192.168.84.135
+node3: 192.168.84.133

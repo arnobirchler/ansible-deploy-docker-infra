@@ -1,0 +1,15 @@
+- name: worker join swarm
+  hosts: all
+  remote_user: root
+  
+  tasks:
+  - include_vars:
+      file: vars.yml
+  - name: JOIN | Copy Script
+    template:
+      src : "docker-swarm-join.j2"
+      dest: "/root/docker-swarm-join.sh"
+      owner: root
+      mode: '0755'
+  - name: JOIN | Run Script
+    command: "bash /root/docker-swarm-join.sh"

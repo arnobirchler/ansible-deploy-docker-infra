@@ -1,0 +1,89 @@
+version: '3'
+# https://medium.com/@kalahari/running-a-mongodb-replica-set-on-docker-1-12-swarm-mode-step-by-step-a5f3ba07d06e
+services:
+###--- MONGO MASTER ---###
+  {{ service_name }}:
+    image: mongo
+    ports:
+      - "{{port}}:{{port}}"
+    deploy:
+      mode: replicated
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+    command: --smallfiles --replSet 'rs1' --storageEngine wiredTiger --keyFile /data/db/keyfile/mongo-keyfile --port {{port}}
+    environment:
+      - MONGO_USER_ADMIN=cristian
+      - MONGO_PASS_ADMIN=cristianPassword2017
+      - MONGO_REPLICA_ADMIN=replicaAdmin
+      - MONGO_PASS_REPLICA=replicaAdminPassword2017
+    extra_hosts:
+      - "manager1:{{node1}}"
+      - "worker1:{{node2}}"
+      - "worker2:{{node3}}"
+    volumes:
+      - /data/db:/data/db
+    networks:
+      - mongo_cluster
+
+
+  # mongo-master:
+  #   image: mongo
+  #   deploy:
+  #     mode: replicated
+  #     replicas: 1
+  #     update_config:
+  #       parallelism: 1
+  #       delay: 10s
+  #     restart_policy:
+  #       condition: on-failure
+  #     placement:
+  #       constraints:
+  #         - node.role == manager
+  #   command: --smallfiles --keyFile /data/keyfile/mongo-keyfile --replSet 'rs1' --storageEngine wiredTiger
+  #   environment:
+  #     - MONGO_USER_ADMIN=cristian
+  #     - MONGO_PASS_ADMIN=cristianPassword2017
+  #     - MONGO_REPLICA_ADMIN=replicaAdmin
+  #     - MONGO_PASS_REPLICA=replicaAdminPassword2017
+  #   volumes:
+  #     - /data/db:/data/db
+  #   networks:
+  #     - mongo_cluster
+
+
+  # mongo-express:
+  #   image: mongo-express
+  #   networks:
+  #     - mongo_cluster
+  #     - proxy_nginx
+  #   ports:
+  #     - 8081:8081
+  #   environment:
+  #     - "VIRTUAL_HOST={{mongo_domain}}"
+  #     - "ME_CONFIG_MONGODB_ADMINUSERNAME=root"
+  #     - "ME_CONFIG_MONGODB_ADMINPASSWORD=root"
+  #   deploy:
+  #     restart_policy:
+  #       condition: on-failure
+  #     mode: replicated
+  #     replicas: 1
+  #     placement:
+  #       constraints: [node.role == manager]
+# volumes:
+#   data-mongo:
+#     driver: local
+#     driver_opts:
+#       type: none
+#       device: /data/db
+#       o: bind
+volumes:
+  
+networks:
+  proxy_nginx:
+    external: true
+  mongo_cluster:
+    driver: overlay

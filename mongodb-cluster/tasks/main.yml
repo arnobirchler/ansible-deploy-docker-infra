@@ -1,0 +1,49 @@
+---
+# tasks file for mongodb-cluster
+
+###--- Label ---###
+- name: ADD MONGO LABEL
+  shell: docker node update --label-add mongo.replica=1 $(docker node ls -q -f name=leader)
+  when: '"leader" in group_names'
+- name: ADD MONGO LABEL
+  shell: docker node update --label-add mongo.replica=2 $(docker node ls -q -f name=manager1)
+  when: '"manager1" in group_names'
+- name: ADD MONGO LABEL
+  shell: docker node update --label-add mongo.replica=3 $(docker node ls -q -f name=manager2)
+  when: '"manager2" in group_names'
+###--- Network ---###
+- name: LEADER | CREATE NETWORK
+  command: docker network create --driver overlay --internal mongo
+  when: '"leader" in group_names'
+###--- Volume ---###
+- name: LEADER | CREATE VOLUME
+  shell: docker volume create --name mongodata1 && docker volume create --name mongoconfig1;
+  when: '"leader" in group_names'
+- name: MANAGER1 | CREATE VOLUME
+  shell: docker volume create --name mongodata2 && docker volume create --name mongoconfig2;
+  when: '"manager1" in group_names'
+- name: MANAGER2 | CREATE VOLUME
+  shell: docker volume create --name mongodata3 && docker volume create --name mongoconfig3;
+  when: '"manager2" in group_names'
+###--- Deploy ---###
+- name: LEADER | STACK | COPY db
+  template:
+    src: "docker-compose-stack-db.j2"
+    dest: "/root/docker-compose-stack-db.yml"
+    owner: root
+    mode : "0555"
+  when: '"leader" in group_names'
+- name: LEADER | STACK | DEPLOY DB
+  command: "docker stack deploy --compose-file /root/docker-compose-stack-db.yml db"
+  when: '"leader" in group_names'
+###--- Init Replica ---###
+- name: LEADER | STACK | COPY REPLICA SH
+  template:
+    src: "init-replica.j2"
+    dest: "/root/init-replica.sh"
+    owner: root
+    mode : "0755"
+  when: '"leader" in group_names'
+- name: LEADER | STACK | INIT REPLICA
+  command: "./init-replica.sh"
+  when: '"leader" in group_names'
