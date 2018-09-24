@@ -5,17 +5,17 @@ services:
     depends_on:
       - elasticsearch
       - mongo1
-    links:
+    environment:
+      - MONGO=db_mongo1
+    external_links:
       - mongo1
       - elasticsearch
     networks:
-      - esnet
+      - elastic_esnet
       - mongo
 
 networks:
-  esnet:
-    external
-  proxy_nginx:
+  elastic_esnet:
     external: true
   mongo:
     external: true

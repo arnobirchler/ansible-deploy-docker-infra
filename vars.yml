@@ -1,14 +1,22 @@
 user: app
 sudoer: deployer
 stack_name: demo
-leader_ip: 192.168.84.136
-ips_list: 192.168.84.136,192.168.84.133,192.168.84.135,192.168.84.134
+leader_ip: 192.168.88.12
+ips_list: 192.168.88.12,192.168.88.13,192.168.88.14,192.168.88.18
 #vhost
-domain: arno-birchler.com
+domain: candies.com
 manager_domain: manager.{{domain}}
 mongo_domain: mongo.{{domain}}
 
 #mongo
-node1: 192.168.84.136
-node2: 192.168.84.135
-node3: 192.168.84.133
+node1: 192.168.88.12
+node2: 192.168.88.13
+node3: 192.168.84.18
+mongo_user_admin: root
+mongo_pass_admin: ToorToor1
+mongo_user_replica: replica
+mongo_pass_replica: ToorToor1
+
+#elastic
+elastic_search_domain: elastic.{{domain}}
+kibana_domain: kibana.{{domain}}

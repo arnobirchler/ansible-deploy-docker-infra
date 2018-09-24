@@ -1,14 +1,14 @@
 [leader]
-192.168.88.12
+192.168.88.248
 
 [manager1]
-192.168.88.13
+192.168.88.249
 
 [manager2]
-192.168.88.18
+192.168.88.250
 
 [worker1]
-192.168.88.14
+192.168.88.246
 
 [manager:children]
 manager1
@@ -26,3 +26,6 @@ worker
 ansible_connection=ssh
 ansible_ssh_user=root
 ansible_ssh_pass=16101997ab
+
+[worker1:vars]
+ansible_ssh_pass=ToorToor1

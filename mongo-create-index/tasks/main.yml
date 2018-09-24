@@ -1,0 +1,33 @@
+---
+# tasks file for mongo-create-index
+
+- name: LEADER | MONGO | COPY SCRIPT
+  template:
+    src: "main.j2"
+    dest: "/root/main.py"
+    owner: root
+    mode : "0755"
+  when: '"leader" in group_names'
+- name: LEADER | MONGO | COPY SCRIPT
+  template:
+    src: "Pipfile.j2"
+    dest: "/root/Pipfile"
+    owner: root
+    mode : "0755"
+  when: '"leader" in group_names'
+- name: LEADER | MONGO | COPY SCRIPT
+  template:
+    src: "Pipfile.lock"
+    dest: "/root/Pipfile.lock"
+    owner: root
+    mode : "0755"
+  when: '"leader" in group_names'
+# - name: LEADER | MONGO | INSTALL PIP
+#   command: "apt-get install python3-pip -y"
+#   when : '"leader" in group_names'
+# - name: LEADER | MONGO | INSTALL PIPENV
+#   command: "python3 -m pip install pipenv && python3 -m pipenv install"
+#   when: '"leader" in group_names'
+- name: LEADER | MONGO | RUN SCRIPT
+  command: "export LC_ALL=C.UTF-8 && export LANG=C.UTF-8 && python3 /root/main.py"
+  when: '"leader" in group_names'

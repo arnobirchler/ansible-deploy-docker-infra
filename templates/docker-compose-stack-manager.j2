@@ -18,6 +18,8 @@ services:
     command: -H tcp://tasks.agent:9001 --tlsskipverify
     environment:
       - "VIRTUAL_HOST={{manager_domain}}"
+    ports:
+      - "9000:9000"
     volumes:
       - portainer_data:/data
     networks:

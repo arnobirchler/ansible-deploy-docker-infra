@@ -1,0 +1,50 @@
+input {
+    jdbc {
+        jdbc_validate_connection => true
+        jdbc_connection_string => "jdbc:oracle:thin:@192.168.88.10:1521:orcl"
+        jdbc_user => "candy_admin"
+        jdbc_password => "ToorToor1"
+        jdbc_driver_library => "/logstash/jars/ojdbc7.jar"
+        jdbc_driver_class => "Java::oracle.jdbc.driver.OracleDriver"
+        statement => "SELECT
+  CONTAINER_CAPACITIES.ID_CONTAINERS,
+  CONTAINER_CAPACITIES.CON_ID_CONTAINERS,
+  CONTAINER_CAPACITIES.NB_CONTAINER_1,
+  CONTAINER_CAPACITIES.NB_CONTAINER_2,
+  c2.NAME AS CONTAINER_1,
+  c1.NAME AS CONTAINER_2,
+  CONDITIONNINGS.NAME AS CONDITIONNING,
+  CONDITIONNINGS.CADENCE,
+  CONDITIONNINGS.DELAY
+FROM CANDY_ADMIN.CONTAINER_CAPACITIES
+  INNER JOIN CANDY_ADMIN.CONTAINERS c1 ON CONTAINER_CAPACITIES.CON_ID_CONTAINERS = c1.ID_CONTAINERS
+  INNER JOIN CANDY_ADMIN.CONTAINERS c2 ON CONTAINER_CAPACITIES.ID_CONTAINERS = c2.ID_CONTAINERS
+  LEFT JOIN CANDY_ADMIN.CONDITIONNINGS ON CONDITIONNINGS.ID_CONTAINERS = c2.ID_CONTAINERS"
+        schedule => "*/10 * * * *"
+        type => "capacities"
+        id => "jdbc_capacities"
+    }
+}
+filter {
+    ruby {
+        path => "/usr/share/logstash/pipeline/.concat.rb"
+    }
+    fingerprint {
+        source => "to_fingerprint"
+        target => "[fingerprint]"
+        method => "SHA256"
+        key => "Log analytics"
+    }
+    mutate {
+        remove_field => ["id_containers", "con_id_containers"]
+    }
+}
+output {
+    # stdout { codec => rubydebug }
+    mongodb {
+        id => "mongo_capacities"
+        database => "orcl"
+        collection => "capacities"
+        uri => "mongodb://{{mongo_user_admin}}:{{mongo_pass_admin}}@{{mongo_domain}}:27017"
+    }
+}

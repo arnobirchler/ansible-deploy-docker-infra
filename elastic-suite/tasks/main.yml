@@ -1,5 +1,43 @@
 ---
 # tasks file for elastic-suite
+- name: ALL | SET vm_max_count KERNEL
+  shell: sysctl -w vm.max_map_count=262144
+- name: ALL | KIBANA | CREATE DIR
+  shell: mkdir -p /data/kibana /data/kibana
+- name: ALL | KIBANA | COPY CONFIG
+  template:
+    src: "kibana.j2"
+    dest: "/data/kibana/kibana.yml"
+    owner: root
+    mode : "0755"
+###### LOGSTASH CONFIG ####
+- name: ALL | LOGSTASH | CREATE DIR
+  shell: mkdir -p /root/logstash/pipeline
+- name: ALL | LOGSTASH | COPY CONFIG 01
+  template:
+    src: "logstash-ora-01.j2"
+    dest: "/root/logstash/pipeline/logstash-ora-01.conf"
+    owner: root
+    mode: "0755"
+- name: ALL | LOGSTASH | COPY CONFIG 02
+  template:
+    src: "logstash-ora-02.j2"
+    dest: "/root/logstash/pipeline/logstash-ora-02.conf"
+    owner: root
+    mode: "0755"
+- name: ALL | LOGSTASH | COPY CONFIG 03
+  template:
+    src: "logstash-ora-03.j2"
+    dest: "/root/logstash/pipeline/logstash-ora-03.conf"
+    owner: root
+    mode: "0755"
+- name: ALL | LOGSTASH | COPY CONFIG CONCAT
+  template:
+    src: ".concat.j2"
+    dest: "/root/logstash/pipeline/.concat.rb"
+    owner: root
+    mode: "0755"
+#### DEPLOY ELASTIC STACK ####
 - name: LEADER | STACK | COPY COMPOSE ELASTIC
   template:
     src: "docker-compose-stack-elastic.j2"

@@ -1,0 +1,14 @@
+def filter(event)
+    res = ""
+    event.to_hash.sort.map do |key, value|
+        if value.is_a? String
+            value = value.strip
+            event.set(key, value)
+        end
+        if not (key.include? "fingerprint" or key.start_with? "@")
+            res = "#{res}#{value}"
+        end
+    end
+    event.set("to_fingerprint", res)
+    return [event]
+end

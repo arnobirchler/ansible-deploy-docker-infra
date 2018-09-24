@@ -1,3 +1,19 @@
+# - name: Install worker
+#   hosts: worker
+#   remote_user: root
+#   tasks:
+#   - include_vars:
+#       file: vars.yml
+  # - name: ALL | Install User & SSH
+  #   include_role:
+  #     name: arnobirchler.ssh-access
+  # - name: ALL | Install Tools
+  #   include_role:
+  #     name: arnobirchler.tools
+  # - name: ALL | Install Docker
+  #   include_role:
+  #     name: arnobirchler.docker
+
 - name: Infra deployment
   hosts: all
   remote_user: root
@@ -5,6 +21,8 @@
   tasks:
   - include_vars:
       file: vars.yml
+  - name: ALL | Update date
+    shell: htpdate -a google.com
   # - name: ALL | Install User & SSH
   #   include_role:
   #     name: arnobirchler.ssh-access
@@ -46,6 +64,11 @@
     ### Remove unused network
   - name: LEADER | SWARM | remove unused network
     command: "docker network prune"
+    ### Remove unused container
+  - name: LEADER | SWARM | remove unused container
+    command: "docker system prune --force"
+  - name: LEADER | SWARM | remove unused volumes
+    command: "docker system prune --volumes"
   - name: LEADER | SWARM | Leave upload script
     template:
       src : "docker-swarm-leaver.j2"
@@ -124,6 +147,9 @@
   - name: DB | MONGODB CLUSTER
     include_role:
       name: mongodb-cluster
+  # - name: DB | CREATE INDEX
+  #   include_role:
+  #     name: mongo-create-index
     #---- DEPLOY ELASTIC SUITE ----#
   - name: DB | ELASTIC SUITE
     include_role:

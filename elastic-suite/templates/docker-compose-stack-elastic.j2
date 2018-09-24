@@ -2,39 +2,98 @@ version: '3'
 services:
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:6.3.0
-    # container_name: elasticsearch
     environment:
+      - "VIRTUAL_HOST={{elastic_search_domain}}"
       - cluster.name=docker-cluster
-      - bootstrap.memory_lock=true
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 20s
+        max_attempts: 3
+        window: 120s
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+      update_config:
+        delay: 2s
+      resources:
+        limits:
+          memory: 1000M
     volumes:
       - esdata1:/usr/share/elasticsearch/data
     ports:
-      - 9200:9200
+      - "9200:9200"
     networks:
       - esnet
-#   elasticsearch2:
-#     image: docker.elastic.co/elasticsearch/elasticsearch:6.3.0
-#     container_name: elasticsearch2
-#     depends_on:
-#       - elasticsearch
-#     environment:
-#       - cluster.name=docker-cluster
-#       - bootstrap.memory_lock=true
-#       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-#       - "discovery.zen.ping.unicast.hosts=elasticsearch"
-#     ulimits:
-#       memlock:
-#         soft: -1
-#         hard: -1
-#     volumes:
-#       - esdata2:/usr/share/elasticsearch/data
-#     networks:
-#       - esnet
+      - proxy_nginx
+###---- REPLICA
+  elasticsearch2:
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.3.0
+    depends_on:
+      - elasticsearch
+    environment:
+      - cluster.name=docker-cluster
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "discovery.zen.ping.unicast.hosts=elasticsearch"
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 20s
+        max_attempts: 3
+        window: 120s
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+      update_config:
+        delay: 2s
+      resources:
+        limits:
+          memory: 1000M
+    volumes:
+      - esdata2:/usr/share/elasticsearch/data
+    networks:
+      - esnet
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:6.3.0
+    ports:
+      - "5601:5601"
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 20s
+        max_attempts: 3
+        window: 120s
+      mode: replicated
+      replicas: 1
+    links:
+      - "elasticsearch:{{elastic_search_domain}}"
+    environment:
+      - "VIRTUAL_HOST={{kibana_domain}}"
+      - SERVER_NAME={{ kibana_domain }}
+      - ELASTICSEARCH_URL=http://{{elastic_search_domain}}:9200/
+      # - SERVER_PORT=5601
+      
+    # volumes:
+    #   - /data/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml
+    networks: 
+      - esnet
+      - proxy_nginx
+  logstash:
+    image: oprax/logstash-oracle
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 20s
+        max_attempts: 3
+        window: 120s
+      mode: replicated
+      replicas: 1
+    volumes:
+      - ${PWD}/logstash/pipeline/:/usr/share/logstash/pipeline/
 
 volumes:
   esdata1:
@@ -44,3 +103,6 @@ volumes:
 
 networks:
   esnet:
+    driver: overlay
+  proxy_nginx:
+    external: true
